@@ -58,10 +58,9 @@ func (r refresher) refresh(ctx context.Context) error {
 		}
 		return r.Create(ctx, secret)
 	}
-	patch := &corev1.Secret{
-		ObjectMeta: secret.ObjectMeta,
-		Data:       map[string][]byte{r.key: t},
+	if secret.Data == nil {
+		secret.Data = map[string][]byte{}
 	}
-
-	return r.Patch(ctx, patch, kclient.StrategicMergeFrom(secret))
+	secret.Data[r.key] = t
+	return r.Update(ctx, secret)
 }
