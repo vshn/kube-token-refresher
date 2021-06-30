@@ -14,7 +14,8 @@ type option struct {
 	SecretKey       string
 
 	RefreshInterval int
-	Oidc            oidcOption
+	Oidc            *oidcOption
+	DummyProvider   bool
 }
 
 type oidcOption struct {
@@ -40,12 +41,14 @@ func getConfig() (option, error) {
 
 	viper.SetEnvPrefix("ktr")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.BindEnv("refreshInterval")
 	viper.BindEnv("secretName")
 	viper.BindEnv("secretNamespace")
 	viper.BindEnv("secretKey")
 	viper.BindEnv("oidc.tokenUrl")
 	viper.BindEnv("oidc.clientID")
 	viper.BindEnv("oidc.clientSecret")
+	viper.BindEnv("dummyProvider")
 
 	if *configFile != "" {
 		viper.SetConfigFile(*configFile)

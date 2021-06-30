@@ -32,7 +32,7 @@ func main() {
 	}
 
 	var provider tokenProvider
-	if opt.Oidc.TokenUrl != "" {
+	if opt.Oidc != nil {
 		provider = &oidcProvider{
 			client: &http.Client{
 				Timeout: 10 * time.Second,
@@ -41,6 +41,8 @@ func main() {
 			clientId:     opt.Oidc.ClientID,
 			clientSecret: opt.Oidc.ClientSecret,
 		}
+	} else if opt.DummyProvider {
+		provider = &dummyProvider{}
 	} else {
 		log.Fatalln("No priovider configured")
 	}
