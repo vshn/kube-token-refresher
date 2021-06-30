@@ -38,12 +38,24 @@ type oidcOption struct {
 
 func getConfig() (option, error) {
 	o := option{
+		SecretKey:       "token",
 		RefreshInterval: 595,
 		LogLevel:        LevelInfo,
 		LogFormat:       TextFormat,
 	}
 
 	configFile := flag.StringP("config", "f", "", "path to configuration file")
+	flag.String("secretName", "", "name of the secret to update")
+	flag.String("secretNamespace", "", "namespace of the secret to update")
+	flag.String("secretKey", o.SecretKey, "name of the secret to update")
+
+	flag.Int("refreshInterval", o.RefreshInterval, "interval in seconds to update the token")
+	flag.String("logLevel", o.LogLevel, "the log level, on of [debug, info, warn]")
+	flag.String("logFormat", o.LogFormat, "how to format the log, on of [text, json]")
+
+	flag.String("oidc.tokenUrl", "", "the OIDC token endpoint")
+	flag.String("oidc.clientID", "", "the OIDC client id")
+	flag.String("oidc.clientSecret", "", "the OIDC client secret")
 	flag.Parse()
 
 	// Get config file
@@ -52,6 +64,8 @@ func getConfig() (option, error) {
 	viper.AddConfigPath("/etc/kube-token-refresher")
 	viper.AddConfigPath("$HOME/.config/kube-token-refresher")
 	viper.AddConfigPath("$HOME/.kube-token-refresher")
+
+	viper.BindPFlags(flag.CommandLine)
 
 	viper.SetEnvPrefix("ktr")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

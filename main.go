@@ -56,7 +56,7 @@ func main() {
 	}
 
 	var provider tokenProvider
-	if opt.Oidc != nil {
+	if opt.Oidc != nil && opt.Oidc.TokenUrl != "" {
 		provider = &oidcProvider{
 			client: &http.Client{
 				Timeout: 10 * time.Second,
