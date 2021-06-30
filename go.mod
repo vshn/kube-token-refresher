@@ -1,6 +1,6 @@
 module github.com/vshn/kube-token-refresher
 
-go 1.18
+go 1.16
 
 require (
 	github.com/sirupsen/logrus v1.7.0
