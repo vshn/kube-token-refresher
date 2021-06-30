@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	kclient "sigs.k8s.io/controller-runtime/pkg/client"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -17,18 +18,41 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
+	// default to text formatter to get human readable output in case of
+	// setup failure
+	textf := new(log.TextFormatter)
+	textf.TimestampFormat = "2006-01-02 15:04:05"
+	textf.FullTimestamp = true
+	log.SetFormatter(textf)
+
 	opt, err := getConfig()
 	if err != nil {
-		log.Fatalf("Failed to get config: %s\n", err)
+		log.WithError(err).Fatal("Failed to get config")
+	}
+
+	// Setup logger
+	switch opt.LogLevel {
+	case LevelWarn:
+		log.SetLevel(log.WarnLevel)
+	case LevelInfo:
+		log.SetLevel(log.InfoLevel)
+	default:
+		log.SetLevel(log.DebugLevel)
+	}
+	switch opt.LogFormat {
+	case JSONFormat:
+		log.SetFormatter(&log.JSONFormatter{})
+	default:
+		// Keep the text logger
 	}
 
 	conf, err := kconfig.GetConfig()
 	if err != nil {
-		log.Fatalf("Failed to get kube config: %s\n", err)
+		log.WithError(err).Fatal("Failed to get kube config")
 	}
 	c, err := kclient.New(conf, kclient.Options{})
 	if err != nil {
-		log.Fatalf("Failed to get kube client: %s\n", err)
+		log.WithError(err).Fatal("Failed to get kube client")
 	}
 
 	var provider tokenProvider
@@ -44,7 +68,7 @@ func main() {
 	} else if opt.DummyProvider {
 		provider = &dummyProvider{}
 	} else {
-		log.Fatalln("No priovider configured")
+		log.Fatal("No priovider configured")
 	}
 
 	r := refresher{
@@ -66,7 +90,7 @@ func main() {
 	for !stopped {
 		err = r.refresh(ctx)
 		if err != nil {
-			log.Printf("Failed to refresh secret: %s\n", err)
+			log.WithField("backoff", backoff).WithError(err).Error("Failed to refresh secret")
 			select {
 			case <-ctx.Done():
 				// Will continue to next select which will handle the termination
@@ -78,7 +102,7 @@ func main() {
 				continue
 			}
 		} else {
-			log.Println("Refreshed token")
+			log.Info("Refreshed token")
 			backoff = 500 * time.Millisecond
 		}
 		select {
@@ -87,7 +111,7 @@ func main() {
 		case <-ctx.Done():
 			stop()
 			stopped = true
-			log.Printf("Terminating.. \n")
+			log.Warn("Terminating..")
 		}
 	}
 }

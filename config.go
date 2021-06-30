@@ -16,7 +16,19 @@ type option struct {
 	RefreshInterval int
 	Oidc            *oidcOption
 	DummyProvider   bool
+
+	LogLevel  string
+	LogFormat string
 }
+
+const (
+	TextFormat = "text"
+	JSONFormat = "json"
+
+	LevelDebug = "debug"
+	LevelInfo  = "info"
+	LevelWarn  = "warn"
+)
 
 type oidcOption struct {
 	TokenUrl     string
@@ -27,6 +39,8 @@ type oidcOption struct {
 func getConfig() (option, error) {
 	o := option{
 		RefreshInterval: 595,
+		LogLevel:        LevelInfo,
+		LogFormat:       TextFormat,
 	}
 
 	configFile := flag.StringP("config", "f", "", "path to configuration file")
@@ -49,6 +63,8 @@ func getConfig() (option, error) {
 	viper.BindEnv("oidc.clientID")
 	viper.BindEnv("oidc.clientSecret")
 	viper.BindEnv("dummyProvider")
+	viper.BindEnv("logFormat")
+	viper.BindEnv("logLevel")
 
 	if *configFile != "" {
 		viper.SetConfigFile(*configFile)
