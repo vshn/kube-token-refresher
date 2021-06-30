@@ -61,13 +61,25 @@ func main() {
 	// TODO(glrf) liveness / readiness
 
 	stopped := false
+	backoff := 500 * time.Millisecond
+	maxbackoff := 30 * time.Second
 	for !stopped {
 		err = r.refresh(ctx)
 		if err != nil {
-			// TODO(glrf) Retries
 			log.Printf("Failed to refresh secret: %s\n", err)
+			select {
+			case <-ctx.Done():
+				// Will continue to next select which will handle the termination
+			case <-time.After(backoff):
+				backoff = 2 * backoff
+				if backoff > maxbackoff {
+					backoff = maxbackoff
+				}
+				continue
+			}
 		} else {
 			log.Println("Refreshed token")
+			backoff = 500 * time.Millisecond
 		}
 		select {
 		case <-ticker.C:
