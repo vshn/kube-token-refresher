@@ -26,43 +26,45 @@ func TestGetToken(t *testing.T) {
 
 	ctx := context.Background()
 
-	tcs := []struct {
+	tcs := map[string]struct {
 		input string
 		code  int
 		fail  bool
 	}{
-		{
+		"Valid200Resonse_ExpectNotFail": {
 			input: `{"access_token": "aaa"}`,
 			code:  200,
 			fail:  false,
 		},
-		{
+		"Valid400Resonse_ExpectFail": {
 			input: `{"error": "invalid_client", "error_description": "unauthorized"}`,
 			code:  401,
 			fail:  true,
 		},
-		{
+		"Empty200Resonse_ExpectFail": {
 			input: `{}`,
 			code:  200,
 			fail:  true,
 		},
-		{
+		"Invalid200Resonse_ExpectFail": {
 			input: `invalid`,
 			code:  200,
 			fail:  true,
 		},
 	}
 
-	for _, tc := range tcs {
-		response = tc.input
-		code = tc.code
-		_, err := p.GetToken(ctx)
-		if !tc.fail && err != nil {
-			t.Fatalf("[input: %s] failed to get token: %s", tc.input, err.Error())
-		}
-		if tc.fail && err == nil {
-			t.Fatalf("[input: %s] should have failed but didn't", tc.input)
-		}
+	for name, tc := range tcs {
+		t.Run(name, func(t *testing.T) {
+			response = tc.input
+			code = tc.code
+			_, err := p.GetToken(ctx)
+			if !tc.fail && err != nil {
+				t.Fatalf("failed to get token: %s", err.Error())
+			}
+			if tc.fail && err == nil {
+				t.Fatalf("should have failed but didn't")
+			}
+		})
 	}
 
 }
