@@ -47,11 +47,13 @@ func (r refresher) refresh(ctx context.Context) error {
 		return fmt.Errorf("error getting secret: %w", err)
 	}
 
+	label := "ktr.appuio.ch/managed"
 	if kerrors.IsNotFound(err) {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      r.name,
 				Namespace: r.namespace,
+				Labels:    map[string]string{label: "true"},
 			},
 			Data: map[string][]byte{r.key: t},
 			Type: corev1.SecretTypeOpaque,
@@ -62,5 +64,9 @@ func (r refresher) refresh(ctx context.Context) error {
 		secret.Data = map[string][]byte{}
 	}
 	secret.Data[r.key] = t
+	if secret.Labels == nil {
+		secret.Labels = map[string]string{}
+	}
+	secret.Labels[label] = "true"
 	return r.Update(ctx, secret)
 }
