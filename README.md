@@ -100,5 +100,3 @@ Command line flags will take precedence over both the configuration file and env
 
 To deploy the `kube-token-refresher` you need OIDC credentials capable of requesting an access token, and Kubernetes credentials to `get` and `update` the specified secret.
 If the `kube-token-refresher` is expected to create the specified secret, it will also need permission to `create` secrets.
-
-You can find an example deployment in `deploy/`.
