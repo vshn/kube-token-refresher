@@ -1,2 +1,5 @@
 kube-token-refresher
 hack/
+dist/
+
+cover.out
