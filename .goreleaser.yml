@@ -1,6 +1,3 @@
-before:
-  hooks:
-    - go mod tidy
 builds:
   - env:
       - CGO_ENABLED=0
@@ -15,3 +12,18 @@ checksum:
   name_template: 'checksums.txt'
 snapshot:
   name_template: "{{ .Tag }}-next"
+dockers:
+- image_templates:
+  - "quay.io/vshn/kube-token-refresher:v{{ .Version }}"
+
+  # For prereleases, updating `latest` and the floating tags of the major
+  # version does not make sense. Only the image for the exact version should
+  # be pushed.
+  - "{{ if not .Prerelease }}quay.io/vshn/kube-token-refresher:v{{ .Major }}{{ end }}"
+
+  - "{{ if not .Prerelease }}quay.io/vshn/kube-token-refresher:latest{{ end }}"
+release:
+  prerelease: auto
+  github:
+    owner: vshn
+    name: kube-token-refresher

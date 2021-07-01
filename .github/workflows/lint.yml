@@ -22,7 +22,5 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    - name: Run go fmt
-      run: test -z $(gofmt -l .)
-    - name: Run go vet
-      run: go vet ./...
+    - name: Run linter
+      run: make lint
