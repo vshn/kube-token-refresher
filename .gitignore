@@ -2,4 +2,5 @@ kube-token-refresher
 hack/
 dist/
 
-cover.out
+*.out
+.github/release-notes.md
