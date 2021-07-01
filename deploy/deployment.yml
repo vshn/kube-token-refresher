@@ -40,7 +40,7 @@ spec:
             secretKeyRef:
               name: ktr
               key: secret
-        image: docker.io/vshn/kube-token-refresher:v1.0.0
+        image: quay.io/vshn/kube-token-refresher:latest
         imagePullPolicy: Always
         resources:
           limits:

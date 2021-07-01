@@ -3,12 +3,10 @@
 ![](https://img.shields.io/github/go-mod/go-version/vshn/kube-token-refresher)
 [![](https://img.shields.io/github/license/vshn/kube-token-refresher)](https://github.com/vshn/kube-token-refresher/blob/master/LICENSE)
 
-The `kube-token-refresher` is a tool to periodically fetch access token and 
-write them to Kubernetes secrets. It fetches the access token using the 
-OpenId Connect Client Credentials grant.
+The `kube-token-refresher` is a tool to periodically fetch access token and write them to Kubernetes secrets. 
+It fetches the access token using the OpenId Connect Client Credentials grant.
 
-This enables systems that expect long lived access token to work with short
-lived tokens that expire frequently.
+This enables systems that expect long lived access token to work with short lived tokens that expire frequently.
 
 ## Configuration
 
@@ -29,7 +27,9 @@ secretNamespace: ''
 secretKey: 'token'
 
 # In what interval (in seconds) to fetch a new token and update the secret
-refreshInterval: 595
+# You should count in possible timeouts upon refreshing and also mount update, see
+# https://kubernetes.io/docs/concepts/configuration/secret/#mounted-secrets-are-updated-automatically
+refreshInterval: 500
 
 # How verbose the logging should be. One of:
 # * debug
