@@ -3,15 +3,14 @@
 ![](https://img.shields.io/github/go-mod/go-version/vshn/kube-token-refresher)
 [![](https://img.shields.io/github/license/vshn/kube-token-refresher)](https://github.com/vshn/kube-token-refresher/blob/master/LICENSE)
 
-The `kube-token-refresher` is a tool to periodically fetch access token and write them to Kubernetes secrets. 
+The `kube-token-refresher` is a tool to periodically fetch access token and write them to Kubernetes secrets.
 It fetches the access token using the OpenId Connect Client Credentials grant.
 
 This enables systems that expect long lived access token to work with short lived tokens that expire frequently.
 
 ## Configuration
 
-The `kube-token-refresher` can be configured using a YAML file, environment 
-variables, or command line flags.
+The `kube-token-refresher` can be configured using a YAML file, environment variables, or command line flags.
 
 ``` yaml
 ---
@@ -45,19 +44,18 @@ logFormat: 'text'
 # Configures how to connect to the OIDC provider
 oidc:
   # The toke endpoint of the OpenId Connect provider
-  # 
+  #
   # Usually in the form of: `https://<domain>/token`
   tokenUrl: ''
 
-  # The Client ID 
+  # The Client ID
   clientID: ''
 
   # The Client Secret
   clientSecret: ''
 ```
 
-The configuration file can be located in one of the following paths or be 
-specified directly with the `--config` flag.
+The configuration file can be located in one of the following paths or be specified directly with the `--config` flag.
 
 * `/etc/kube-token-refresher/config.yml`
 * `$HOME/.config/kube-token-refresher/config.yml`
@@ -65,10 +63,9 @@ specified directly with the `--config` flag.
 
 ### Environment Variables
 
-All configuration values can be set through environment variables. The 
-configuration key is translated to a environment variable with the prefix
-`KTR_` and the key name in all caps. For nested configuration keys the 
-levels are separated with `_`.
+All configuration values can be set through environment variables.
+The configuration key is translated to a environment variable with the prefix `KTR_` and the key name in all caps.
+For nested configuration keys the levels are separated with `_`.
 
 
 ```
@@ -85,9 +82,9 @@ Environment variables will take precedence over the configuration file.
 
 ### Command Line Flags
 
-All configuration values can also be set through command line flags. The 
-configuration key is directly translated to the flag. Nested configuration
-keys are separated with `.`.
+All configuration values can also be set through command line flags.
+The configuration key is directly translated to the flag.
+Nested configuration keys are separated with `.`.
 
 ```
 # Will set the logLevel to `warn`
@@ -98,14 +95,11 @@ keys are separated with `.`.
 ```
 
 
-Command line flags will take precedence over both the configuration file and 
-environment variables.
+Command line flags will take precedence over both the configuration file and environment variables.
 
 
 ## Deploy
 
-To deploy the `kube-token-refresher` you need OIDC credentials capable of 
-requesting an access token, and Kubernetes credentials to `get` and `update`
-the specified secret.
+To deploy the `kube-token-refresher` you need OIDC credentials capable of requesting an access token, and Kubernetes credentials to `get` and `update` the specified secret.
 
 You can find an example deployment in `deploy/`.
