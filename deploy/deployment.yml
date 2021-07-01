@@ -3,9 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: ktr
+    app: kube-token-refresher
   name: token-refresher
-  namespace: catalog
 spec:
   replicas: 1
   selector:
@@ -29,16 +28,16 @@ spec:
         - name: KTR_SECRETKEY
           value: "token"
         - name: KTR_OIDC_TOKENURL
-          value: "https://auth.vshn.net/token"
+          value: <token-url>
         - name: KTR_OIDC_CLIENTID
           valueFrom:
             secretKeyRef:
-              name: ktr
+              name: kube-token-refresher
               key: id
         - name: KTR_OIDC_CLIENTSECRET
           valueFrom:
             secretKeyRef:
-              name: ktr
+              name: kube-token-refresher
               key: secret
         image: quay.io/vshn/kube-token-refresher:latest
         imagePullPolicy: Always
@@ -51,37 +50,33 @@ spec:
             memory: 10Mi
       dnsPolicy: ClusterFirst
       restartPolicy: Always
-      serviceAccountName: ktr
+      serviceAccountName: kube-token-refresher
 
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ktr
-  namespace: catalog
+  name: kube-token-refresher
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: service-ktr
-  namespace: catalog
+  name: kube-token-refresher
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: ktr
+  name: kube-token-refresher
 subjects:
 - kind: ServiceAccount
-  name: ktr
-  namespace: catalog
+  name: kube-token-refresher
 
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: ktr
-  namespace: catalog
+  name: kube-token-refresher
 rules:
 - apiGroups:
   - ""
