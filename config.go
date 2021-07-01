@@ -2,23 +2,36 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/posflag"
 	flag "github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
-type option struct {
-	SecretName      string
-	SecretNamespace string
-	SecretKey       string
+type configuration struct {
+	RefreshInterval int                 `koanf:"interval"`
+	Secret          secretConfiguration `koanf:"secret"`
+	Oidc            oidcConfiguration   `koanf:"oidc"`
+	Log             logConfiguration    `koanf:"log"`
 
-	RefreshInterval int
-	Oidc            *oidcOption
-	DummyProvider   bool
+	DummyProvider bool `koanf:"dummyprovider"`
+}
 
-	LogLevel  string
-	LogFormat string
+type secretConfiguration struct {
+	Name      string `koanf:"name"`
+	Namespace string `koanf:"namespace"`
+	Key       string `koanf:"key"`
+}
+
+type logConfiguration struct {
+	Level  string `koanf:"level"`
+	Format string `koanf:"format"`
 }
 
 const (
@@ -30,87 +43,76 @@ const (
 	LevelWarn  = "warn"
 )
 
-type oidcOption struct {
-	TokenUrl     string
-	ClientID     string
-	ClientSecret string
+type oidcConfiguration struct {
+	TokenUrl     string `koanf:"tokenurl"`
+	ClientID     string `koanf:"clientid"`
+	ClientSecret string `koanf:"clientsecret"`
 }
 
-func getConfig() (option, error) {
-	o := option{
-		SecretKey:       "token",
-		RefreshInterval: 595,
-		LogLevel:        LevelInfo,
-		LogFormat:       TextFormat,
+func getConfig() (configuration, error) {
+	c := configuration{
+		Secret: secretConfiguration{
+			Key: "token",
+		},
+		RefreshInterval: 500,
+		DummyProvider:   false,
+		Log: logConfiguration{
+			Level:  LevelInfo,
+			Format: TextFormat,
+		},
 	}
+	k := koanf.New(".")
 
-	configFile := flag.StringP("config", "f", "", "path to configuration file")
-	flag.String("secretName", "", "name of the secret to update")
-	flag.String("secretNamespace", "", "namespace of the secret to update")
-	flag.String("secretKey", o.SecretKey, "name of the secret to update")
+	f := flag.NewFlagSet("config", flag.ContinueOnError)
+	configFile := f.StringP("config", "f", "", "path to configuration file")
+	f.String("secret.name", "", "name of the secret to update")
+	f.String("secret.namespace", "", "namespace of the secret to update")
+	f.String("secret.key", c.Secret.Key, "name of the secret to update")
 
-	flag.Int("refreshInterval", o.RefreshInterval, "interval in seconds to update the token")
-	flag.String("logLevel", o.LogLevel, "the log level, on of [debug, info, warn]")
-	flag.String("logFormat", o.LogFormat, "how to format the log, on of [text, json]")
+	f.Int("interval", c.RefreshInterval, "interval in seconds to update the token")
+	f.String("log.level", c.Log.Level, "the log level, on of [debug, info, warn]")
+	f.String("log.format", c.Log.Format, "how to format the log, on of [text, json]")
 
-	flag.String("oidc.tokenUrl", "", "the OIDC token endpoint")
-	flag.String("oidc.clientID", "", "the OIDC client id")
-	flag.String("oidc.clientSecret", "", "the OIDC client secret")
-	flag.Parse()
-
-	// Get config file
-	viper.SetConfigType("yaml")
-	viper.SetConfigName("config")
-	viper.AddConfigPath("/etc/kube-token-refresher")
-	viper.AddConfigPath("$HOME/.config/kube-token-refresher")
-	viper.AddConfigPath("$HOME/.kube-token-refresher")
-
-	viper.BindPFlags(flag.CommandLine)
-
-	viper.SetEnvPrefix("ktr")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("refreshInterval")
-	viper.BindEnv("secretName")
-	viper.BindEnv("secretNamespace")
-	viper.BindEnv("secretKey")
-	viper.BindEnv("oidc.tokenUrl")
-	viper.BindEnv("oidc.clientID")
-	viper.BindEnv("oidc.clientSecret")
-	viper.BindEnv("dummyProvider")
-	viper.BindEnv("logFormat")
-	viper.BindEnv("logLevel")
+	f.String("oidc.tokenurl", "", "the OIDC token endpoint")
+	f.String("oidc.clientid", "", "the OIDC client id")
+	f.String("oidc.clientsecret", "", "the OIDC client secret")
+	f.Parse(os.Args[1:])
 
 	if *configFile != "" {
-		viper.SetConfigFile(*configFile)
-	}
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
-		return o, err
-	}
-	if err != nil && errors.As(err, &viper.ConfigFileNotFoundError{}) &&
-		*configFile != "" {
-		return o, err
+		if err := k.Load(file.Provider(*configFile), yaml.Parser()); err != nil {
+			return c, fmt.Errorf("unable to read file %s: %w", *configFile, err)
+		}
 	}
 
-	err = viper.Unmarshal(&o)
-	if err != nil {
-		return o, err
+	if err := k.Load(env.Provider("KTR_", ".", func(s string) string {
+		return strings.ReplaceAll(strings.ToLower(
+			strings.TrimPrefix(s, "KTR_")), "_", ".")
+	}), nil); err != nil {
+		return c, fmt.Errorf("unable to parse environemnt variables: %w", err)
 	}
 
-	if err = validateConfig(o); err != nil {
-		return o, err
+	if err := k.Load(posflag.Provider(f, ".", k), nil); err != nil {
+		return c, fmt.Errorf("unable to parse commandline flags: %w", err)
 	}
-	return o, nil
+
+	if err := k.Unmarshal("", &c); err != nil {
+		return c, fmt.Errorf("could not load config: %w", err)
+	}
+
+	if err := validateConfig(c); err != nil {
+		return c, err
+	}
+	return c, nil
 }
 
-func validateConfig(o option) error {
-	if o.SecretName == "" {
+func validateConfig(c configuration) error {
+	if c.Secret.Name == "" {
 		return errors.New("secret name may not be empty")
 	}
-	if o.SecretNamespace == "" {
+	if c.Secret.Namespace == "" {
 		return errors.New("secret namespace may not be empty")
 	}
-	if o.SecretKey == "" {
+	if c.Secret.Key == "" {
 		return errors.New("secret key may not be empty")
 	}
 	return nil

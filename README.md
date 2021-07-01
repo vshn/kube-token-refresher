@@ -16,50 +16,48 @@ The `kube-token-refresher` can be configured using a YAML file, environment vari
 ---
 ## kube-token-refresher configuration
 
-# Name of the secret to write to
-secretName: ''
+secret:
+  # Name of the secret to write to
+  name: ''
 
-# Namespace of the secret to write to
-secretNamespace: ''
+  # Namespace of the secret to write to
+  namespace: ''
 
-# The key in the specified secret to write the token to
-secretKey: 'token'
+  # The key in the specified secret to write the token to
+  key: 'token'
 
 # In what interval (in seconds) to fetch a new token and update the secret
 # You should count in possible timeouts upon refreshing and also mount update, see
 # https://kubernetes.io/docs/concepts/configuration/secret/#mounted-secrets-are-updated-automatically
-refreshInterval: 500
+interval: 500
 
-# How verbose the logging should be. One of:
-# * debug
-# * info
-# * warn
-logLevel: 'info'
+log:
+  # How verbose the logging should be. One of:
+  # * debug
+  # * info
+  # * warn
+  level: 'info'
 
-# What format to log in. One of
-# * text
-# * json
-logFormat: 'text'
+  # What format to log in. One of
+  # * text
+  # * json
+  format: 'text'
 
 # Configures how to connect to the OIDC provider
 oidc:
   # The toke endpoint of the OpenId Connect provider
   #
   # Usually in the form of: `https://<domain>/token`
-  tokenUrl: ''
+  tokenurl: ''
 
   # The Client ID
-  clientID: ''
+  clientid: ''
 
   # The Client Secret
-  clientSecret: ''
+  clientsecret: ''
 ```
 
-The configuration file can be located in one of the following paths or be specified directly with the `--config` flag.
-
-* `/etc/kube-token-refresher/config.yml`
-* `$HOME/.config/kube-token-refresher/config.yml`
-* `$HOME/.kube-token-refresher/config.yml`
+The configuration file has to be specified directly with the `--config` flag.
 
 ### Environment Variables
 
@@ -70,7 +68,7 @@ For nested configuration keys the levels are separated with `_`.
 
 ```
 # Will set the logLevel to `debug`
-export KTR_LOGLEVEL="debug"
+export KTR_LOG_LEVEL="debug"
 
 # Will set the OIDC tokenUrl to `https://auth.vshn.net/token`
 export KTR_OIDC_TOKENURL="https://auth.vshn.net/token"
@@ -88,10 +86,10 @@ Nested configuration keys are separated with `.`.
 
 ```
 # Will set the logLevel to `warn`
-./kube-token-refresher --logLevel warn
+./kube-token-refresher --log.level warn
 
 # Will set the OIDC tokenUrl to `https://auth.vshn.net/token`
-./kube-token-refresher --oidc.tokenUrl="https://auth.vshn.net/token"
+./kube-token-refresher --oidc.tokenurl="https://auth.vshn.net/token"
 ```
 
 
@@ -101,5 +99,6 @@ Command line flags will take precedence over both the configuration file and env
 ## Deploy
 
 To deploy the `kube-token-refresher` you need OIDC credentials capable of requesting an access token, and Kubernetes credentials to `get` and `update` the specified secret.
+If the `kube-token-refresher` is expected to create the specified secret, it will also need permission to `create` secrets.
 
 You can find an example deployment in `deploy/`.

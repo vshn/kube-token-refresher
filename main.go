@@ -25,61 +25,60 @@ func main() {
 	textf.FullTimestamp = true
 	log.SetFormatter(textf)
 
-	opt, err := getConfig()
+	conf, err := getConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get config")
 	}
 
 	// Setup logger
-	switch opt.LogLevel {
-	case LevelWarn:
-		log.SetLevel(log.WarnLevel)
-	case LevelInfo:
-		log.SetLevel(log.InfoLevel)
-	default:
-		log.SetLevel(log.DebugLevel)
+	l, err := log.ParseLevel(conf.Log.Level)
+	if err != nil {
+		log.WithError(err).Error("Failed to set log level. Falling back to debug.")
+		l = log.DebugLevel
 	}
-	switch opt.LogFormat {
+	log.SetLevel(l)
+
+	switch conf.Log.Format {
 	case JSONFormat:
 		log.SetFormatter(&log.JSONFormatter{})
 	default:
 		// Keep the text logger
 	}
 
-	conf, err := kconfig.GetConfig()
+	kc, err := kconfig.GetConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get kube config")
 	}
-	c, err := kclient.New(conf, kclient.Options{})
+	c, err := kclient.New(kc, kclient.Options{})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get kube client")
 	}
 
 	var provider tokenProvider
-	if opt.Oidc != nil && opt.Oidc.TokenUrl != "" {
+	if conf.Oidc.TokenUrl != "" {
 		provider = &oidcProvider{
 			client: &http.Client{
 				Timeout: 10 * time.Second,
 			},
-			tokenUrl:     opt.Oidc.TokenUrl,
-			clientId:     opt.Oidc.ClientID,
-			clientSecret: opt.Oidc.ClientSecret,
+			tokenUrl:     conf.Oidc.TokenUrl,
+			clientId:     conf.Oidc.ClientID,
+			clientSecret: conf.Oidc.ClientSecret,
 		}
-	} else if opt.DummyProvider {
+	} else if conf.DummyProvider {
 		provider = &dummyProvider{}
 	} else {
 		log.Fatal("No priovider configured")
 	}
 
 	r := refresher{
-		name:      opt.SecretName,
-		namespace: opt.SecretNamespace,
-		key:       opt.SecretKey,
+		name:      conf.Secret.Name,
+		namespace: conf.Secret.Namespace,
+		key:       conf.Secret.Key,
 		Client:    c,
 		provider:  provider,
 	}
 
-	ticker := time.NewTicker(time.Duration(opt.RefreshInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(conf.RefreshInterval) * time.Second)
 	defer ticker.Stop()
 
 	// TODO(glrf) liveness / readiness
